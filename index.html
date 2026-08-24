@@ -375,8 +375,10 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   border-radius: 8px;
   padding: 4px 8px;
   display: flex; flex-direction: column; align-items: center; gap: 1px;
-  cursor: default; transition: all 0.18s;
+  cursor: pointer; transition: all 0.18s;
   min-width: 48px;
+  touch-action: manipulation;
+  -webkit-user-select: none; user-select: none;
 }
 .word-chip:hover { border-color: var(--bamboo2); background: #f0f8e8; transform: translateY(-2px); box-shadow: 0 3px 10px rgba(74,124,47,0.15); }
 .word-chip { position: relative; }
@@ -773,6 +775,15 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   margin-top: 2px; min-height: 6px;
 }
 .wt-char-dots .lt-hist-dot { width: 6px; height: 6px; }
+.wt-meaning {
+  font-family: 'Arial Narrow', 'Roboto Condensed', 'Noto Sans SC', sans-serif;
+  font-size: 0.62rem; font-weight: 500; letter-spacing: 0.1px;
+  color: var(--bamboo);
+  margin-top: 6px;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
 
 /* ── WORD DELETE UNDO TOAST ── */
 #word-delete-toast {
@@ -1130,7 +1141,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── TABS ─────────────────────────────────────────────────────────────────────
-function switchTab(tab, targetChar = null) {
+function switchTab(tab, targetChar = null, targetWord = null) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + tab).classList.add('active');
@@ -1145,6 +1156,9 @@ function switchTab(tab, targetChar = null) {
 
   if (tab === 'wordlearned') {
     renderLearnedWords();
+    if (targetWord) {
+      setTimeout(() => scrollToWordInLearned(targetWord), 100);
+    }
   }
 
   if (tab === 'search' && document.getElementById('char-card-fixed')) {
@@ -1203,6 +1217,50 @@ function scrollToCharInLearned(ch) {
       break;
     }
   }
+}
+
+function scrollToWordInLearned(word) {
+  const tile = document.getElementById('wt-' + word);
+  if (!tile) return;
+
+  const header = document.getElementById('main-header');
+  const tabs = document.getElementById('main-tabs');
+  const headerOffset = (header ? header.offsetHeight : 0)
+                     + (tabs   ? tabs.offsetHeight   : 0)
+                     + 12; // extra breathing room
+  const elementPosition = tile.getBoundingClientRect().top;
+  const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+  window.scrollTo({
+    top: offsetPosition,
+    behavior: "smooth"
+  });
+
+  // Visual feedback
+  tile.style.transition = 'box-shadow 0.3s, transform 0.3s';
+  tile.style.transform = 'scale(1.06)';
+  tile.style.boxShadow = '0 0 0 3px var(--gold)';
+  setTimeout(() => { tile.style.transform = ''; tile.style.boxShadow = ''; }, 700);
+}
+
+// ── LONG-PRESS: word-chip (字典查询) → jump to 已学词语 ────────────────────────
+let wordLongPressTimer = null;
+const WORD_LONG_PRESS_MS = 550;
+
+function startWordLongPress(word) {
+  clearTimeout(wordLongPressTimer);
+  wordLongPressTimer = setTimeout(() => jumpToWordInLearned(word), WORD_LONG_PRESS_MS);
+}
+
+function cancelWordLongPress() {
+  clearTimeout(wordLongPressTimer);
+}
+
+function jumpToWordInLearned(word) {
+  const learned = getLearnedWords();
+  const match = learned.find(w => w.word === word);
+  if (!match) return; // not in 已学词语 (e.g. a char exceeds threshold) — silently do nothing
+  switchTab('wordlearned', null, word);
 }
 
 // ── LEARNED CHARACTERS ───────────────────────────────────────────────────────
@@ -1349,6 +1407,7 @@ function renderLearnedWords() {
       <div class="word-tile" id="wt-${w.word}">
         <button class="wt-delete" onclick="pendingDeleteWord('${w.word}', event)" title="删除「${w.word}」">×</button>
         <div class="wt-chars">${charsHtml}</div>
+        ${w.meaning ? `<div class="wt-meaning">${w.meaning}</div>` : ''}
       </div>`;
   }).join('');
 
@@ -1630,8 +1689,13 @@ function searchChar() {
           c === ch ? `<span class="wc-target">${c}</span>` : c
         ).join('');
         return `
-          <div class="word-chip" id="chip-${w.word}">
-            <button class="wc-delete" onclick="deleteWord('${w.word}', event)" title="删除「${w.word}」">×</button>
+          <div class="word-chip" id="chip-${w.word}"
+               onpointerdown="startWordLongPress('${w.word}')"
+               onpointerup="cancelWordLongPress()"
+               onpointerleave="cancelWordLongPress()"
+               onpointercancel="cancelWordLongPress()"
+               oncontextmenu="return false">
+            <button class="wc-delete" onpointerdown="event.stopPropagation()" onclick="deleteWord('${w.word}', event)" title="删除「${w.word}」">×</button>
             <div class="wc-hanzi">${highlighted}</div>
             ${w.pinyin ? `<div class="wc-pinyin">${w.pinyin}</div>` : ''}
             ${w.meaning ? `<div class="wc-meaning">${w.meaning}</div>` : ''}
