@@ -982,13 +982,13 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 
 <div class="tabs" id="main-tabs">
   <button class="tab active" onclick="switchTab('search')" id="tab-search">
-    🔍 字典查询
+    🔍 字典
   </button>
   <button class="tab" onclick="switchTab('learned')" id="tab-learned">
-    📚 已学字表
+    📚 汉字
   </button>
   <button class="tab" onclick="switchTab('wordlearned')" id="tab-wordlearned">
-    📖 已学词语
+    📖 词语
   </button>
   <button class="tab" onclick="switchTab('annotate')" id="tab-annotate">
     📝 添加拼音
@@ -1201,14 +1201,10 @@ function scrollToCharInLearned(ch) {
                          + (tabs   ? tabs.offsetHeight   : 0)
                          + (stickyBar ? stickyBar.offsetHeight : 0)
                          + 12; // extra breathing room
-      const elementPosition = tile.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
-      
+      tile.style.scrollMarginTop = headerOffset + 'px';
+      tile.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
       // Visual feedback
       tile.style.transition = 'box-shadow 0.3s, transform 0.3s';
       tile.style.transform = 'scale(1.1)';
@@ -1228,13 +1224,9 @@ function scrollToWordInLearned(word) {
   const headerOffset = (header ? header.offsetHeight : 0)
                      + (tabs   ? tabs.offsetHeight   : 0)
                      + 12; // extra breathing room
-  const elementPosition = tile.getBoundingClientRect().top;
-  const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
-  window.scrollTo({
-    top: offsetPosition,
-    behavior: "smooth"
-  });
+  tile.style.scrollMarginTop = headerOffset + 'px';
+  tile.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   // Visual feedback
   tile.style.transition = 'box-shadow 0.3s, transform 0.3s';
