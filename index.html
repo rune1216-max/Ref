@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="汉字助手">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Sans+SC:wght@300;400;700;900&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.1.0/style.css">
 <style>
   html { scroll-padding-top: var(--header-h); }
 </style>
@@ -37,7 +38,7 @@
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
 }
@@ -72,7 +73,7 @@ header::after {
   display: flex; align-items: center; justify-content: center;
   background: rgba(201,168,76,0.12);
   flex-shrink: 0;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'LXGW WenKai', 'Noto Serif SC', serif;
   font-size: 1.05rem; font-weight: 700;
   color: var(--gold);
   letter-spacing: -1px;
@@ -88,7 +89,7 @@ header::after {
   padding: 6px 12px; border-radius: 20px;
   display: flex; align-items: center; gap: 6px;
   cursor: pointer; transition: background 0.2s;
-  font-family: 'Noto Sans SC', sans-serif; font-weight: 700;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif; font-weight: 700;
   user-select: none; -webkit-user-select: none;
   position: relative;
 }
@@ -133,7 +134,7 @@ header::after {
 .sd-input {
   flex: 1; padding: 8px 10px;
   border: 1.5px solid var(--mist); border-radius: 10px;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.95rem; font-weight: 700;
   outline: none; background: var(--paper); color: var(--ink);
   max-width: 100px;
@@ -143,7 +144,7 @@ header::after {
   padding: 8px 14px;
   background: var(--bamboo); color: #fff;
   border: none; border-radius: 10px;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.85rem; font-weight: 700;
   cursor: pointer; transition: background 0.2s;
   white-space: nowrap;
@@ -163,7 +164,7 @@ header::after {
   padding: 6px 12px;
   background: var(--paper); border: 1.5px solid var(--mist);
   border-radius: 10px; color: var(--bamboo);
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.8rem; font-weight: 700;
   cursor: pointer; transition: all 0.2s;
   white-space: nowrap;
@@ -191,7 +192,7 @@ header::after {
 }
 .tab {
   flex: 1; padding: 13px 8px; border: none; background: none;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.85rem; font-weight: 700; color: #aaa;
   cursor: pointer; transition: all 0.2s;
   display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -234,7 +235,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 .search-input {
   width: 130px;
   flex: none;
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'LXGW WenKai', 'Noto Serif SC', serif;
   font-size: 1.1rem; font-weight: 700;
   padding: 6px 10px;
   border: 2px solid var(--mist);
@@ -246,13 +247,13 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   text-align: center;
 }
 .search-input:focus { border-color: var(--bamboo); }
-.search-input::placeholder { font-size: 0.72rem; color: #bbb; font-weight: 400; font-family: 'Noto Sans SC', sans-serif; }
+.search-input::placeholder { font-size: 0.72rem; color: #bbb; font-weight: 400; font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif; }
 
 .search-btn {
   padding: 7px 16px;
   background: linear-gradient(135deg, var(--bamboo), var(--bamboo2));
   color: #fff; border: none; border-radius: 10px;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.85rem; font-weight: 700;
   cursor: pointer; transition: all 0.18s;
   white-space: nowrap;
@@ -277,7 +278,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   display: flex; align-items: center; gap: 20px;
 }
 .char-big {
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'LXGW WenKai', 'Noto Serif SC', serif;
   font-size: 4.5rem; font-weight: 700;
   color: #fff; line-height: 1;
   text-shadow: 2px 3px 8px rgba(0,0,0,0.4);
@@ -311,7 +312,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   cursor: pointer;
   transition: background 0.2s, transform 0.2s;
   padding: 0;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
 }
 .char-jump-arrow:hover  { background: rgba(255,255,255,0.24); }
 .char-jump-arrow:active { transform: scale(0.92); }
@@ -328,7 +329,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   font-size: 1rem; font-weight: 900; line-height: 1;
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.15s, background 0.2s;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   box-shadow: 0 2px 6px rgba(0,0,0,0.25);
 }
 .char-test-btn-float.correct   { background: #d4edda; color: #2d6a3f; }
@@ -399,7 +400,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 .word-chip:hover .wc-delete { display: block; }
 .word-chip .wc-delete:hover { transform: scale(1.2); }
 .word-chip .wc-hanzi {
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'LXGW WenKai', 'Noto Serif SC', serif;
   font-size: 0.95rem; font-weight: 700; color: var(--ink);
 }
 .word-chip .wc-target {
@@ -487,14 +488,14 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   background: none; border: 1px solid var(--mist);
   border-radius: 6px; padding: 3px 10px;
   font-size: 0.75rem; color: #aaa; cursor: pointer;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   transition: all 0.15s;
 }
 .clear-btn:hover { color: var(--rust); border-color: var(--rust); }
 
 .sentence-input {
   width: 100%; padding: 16px;
-  font-family: 'Microsoft YaHei Light', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Microsoft YaHei Light', 'Microsoft YaHei', 'PingFang SC', sans-serif;
   font-size: 1.1rem; font-weight: 300; line-height: 1.8;
   border: none; outline: none; resize: none;
   background: var(--card); color: var(--ink);
@@ -527,7 +528,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 }
 
 .annotated-text {
-  font-family: 'Microsoft YaHei Light', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Microsoft YaHei Light', 'Microsoft YaHei', 'PingFang SC', sans-serif;
   font-size: 1.1rem; font-weight: 300;
   line-height: 2.4;
   word-break: break-word;
@@ -559,7 +560,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 }
 .ann-ruby .ruby-pin {
   font-size: 0.82rem; color: var(--bamboo);
-  font-family: 'Noto Sans', 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans', 'Noto Sans SC', sans-serif;
   font-weight: 700; letter-spacing: 0;
   font-feature-settings: "liga" 0;
   padding-top: 2px;
@@ -599,7 +600,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 .threshold-input {
   flex: 1; padding: 8px 12px;
   border: 2px solid var(--mist); border-radius: 10px;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 1rem; font-weight: 700;
   outline: none; background: var(--paper);
   max-width: 100px;
@@ -609,7 +610,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   padding: 8px 16px;
   background: var(--bamboo); color: #fff;
   border: none; border-radius: 10px;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.88rem; font-weight: 700;
   cursor: pointer; transition: background 0.2s;
 }
@@ -626,7 +627,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   background: var(--card);
   border: 2px solid var(--mist);
   border-radius: var(--r);
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.95rem; font-weight: 700; color: var(--bamboo);
   cursor: pointer; transition: all 0.2s;
   display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -661,7 +662,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   padding: 7px 16px;
   border-radius: 8px; border: 1.5px solid var(--mist);
   background: var(--paper); color: var(--bamboo);
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.8rem; font-weight: 700;
   cursor: pointer; transition: all 0.15s;
 }
@@ -694,7 +695,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   transform: translateY(-2px); box-shadow: 0 3px 10px rgba(74,124,47,0.15);
 }
 .learned-tile .lt-char {
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'LXGW WenKai', 'Noto Serif SC', serif;
   font-size: 1.5rem; font-weight: 700; color: var(--ink); line-height: 1;
 }
 .learned-tile .lt-pinyin { display: none; }
@@ -755,7 +756,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   min-width: 42px;
 }
 .wt-char {
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'LXGW WenKai', 'Noto Serif SC', serif;
   font-size: 1rem; font-weight: 700; color: var(--ink); line-height: 1;
 }
 .wt-char-btns {
@@ -778,7 +779,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 }
 .wt-char-dots .lt-hist-dot { width: 6px; height: 6px; }
 .wt-meaning {
-  font-family: 'Arial Narrow', 'Roboto Condensed', 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Arial Narrow', 'Roboto Condensed', 'Noto Sans SC', sans-serif;
   font-size: 0.62rem; font-weight: 500; letter-spacing: 0.1px;
   color: var(--bamboo);
   margin-top: 6px;
@@ -792,7 +793,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%);
   background: #2a2a2a; color: #fff;
   padding: 10px 16px; border-radius: 24px;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.82rem; font-weight: 700;
   display: flex; align-items: center; gap: 10px;
   z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.35);
@@ -810,7 +811,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 }
 .char-meaning-text {
   font-size: 0.88rem; color: #4a4a4a; line-height: 1.7;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   white-space: pre-line;
 }
 .char-meaning-text .meaning-num {
@@ -865,7 +866,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   padding: 7px 16px;
   background: var(--card); border: 1.5px solid var(--bamboo);
   border-radius: 10px; color: var(--bamboo);
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.82rem; font-weight: 700;
   cursor: pointer; transition: all 0.18s;
 }
@@ -889,7 +890,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
   background: #2a2a2a; color: #fff;
   padding: 10px 16px; border-radius: 24px;
-  font-family: 'Noto Sans SC', sans-serif;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
   font-size: 0.82rem; font-weight: 700;
   display: flex; align-items: center; gap: 10px;
   z-index: 9999; box-shadow: 0 4px 20px rgba(0,0,0,0.35);
@@ -902,7 +903,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   background: var(--gold); color: #1a1a1a;
   border: none; border-radius: 12px;
   padding: 3px 12px; font-size: 0.78rem; font-weight: 900;
-  cursor: pointer; font-family: 'Noto Sans SC', sans-serif;
+  cursor: pointer; font-family: 'LXGW WenKai', 'Noto Sans SC', sans-serif;
 }
 
 /* ── DICT CARD: sticky header + scrollable words ── */
@@ -2263,7 +2264,7 @@ function annotateSentence() {
       continue;
     }
     const charClass = notFound ? 'ruby-char-notfound' : 'ruby-char';
-    html += `<span class="ann-ruby"><span class="${charClass}">${ch}</span><span class="ruby-pin${isMulti ? ' multi' : ''}">&lt;${displayPin}&gt;</span></span>`;
+    html += `<span class="ann-ruby"><span class="${charClass}">${ch}</span><span class="ruby-pin${isMulti ? ' multi' : ''}">（${displayPin}）</span></span>`;
   }
 
   const hasFlag = unknownCount > 0 || notFoundCount > 0;
