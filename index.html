@@ -1651,7 +1651,8 @@ function onCharInput() {
 }
 
 function searchChar() {
-  const ch = document.getElementById('char-input').value.trim();
+  const inputEl = document.getElementById('char-input');
+  const ch = inputEl.value.trim();
   const container = document.getElementById('char-result');
 
   if (!ch) {
@@ -1666,8 +1667,11 @@ function searchChar() {
   const found = charMap[ch];
   if (!found) {
     container.innerHTML = `<div class="no-result"><span class="no-icon">🔍</span>「${ch}」不在3500常用字表中</div>`;
-    return;
+    return; // 找不到：保留输入框内容，方便查看/修改
   }
+
+  // 找到了：立即清空输入框，方便连续输入下一个字
+  inputEl.value = '';
 
   const matchedWords = allWordData.filter(w => w.word.includes(ch));
   const pinyins = found.pinyin.split('/').map(p => p.trim()).filter(Boolean);
