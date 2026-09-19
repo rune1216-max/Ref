@@ -260,6 +260,20 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 .search-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(74,124,47,0.4); }
 .search-btn:active { transform: translateY(0); }
 
+/* ── WORD SEARCH BOX (词语 tab) ── */
+.word-search-wrap {
+  background: var(--card);
+  border: 2px solid var(--mist);
+  border-radius: var(--r);
+  padding: 7px 16px;
+  box-shadow: 0 4px 12px var(--shadow);
+  margin-bottom: 12px;
+}
+.word-search-input {
+  width: 100%;
+  text-align: left;
+}
+
 /* ── CHARACTER RESULT CARD ── */
 .char-card {
   background: var(--card);
@@ -809,7 +823,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   animation: fadeIn 0.4s ease;
 }
 .char-meaning-text {
-  font-size: 0.88rem; color: #4a4a4a; line-height: 1.7;
+  font-size: 0.88rem; color: #4a4a4a; line-height: 1;
   font-family: 'Noto Sans SC', sans-serif;
   white-space: pre-line;
 }
@@ -1007,7 +1021,6 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
         <input class="search-input" id="char-input" type="text"
                maxlength="1" placeholder="输入单个汉字…"
                oninput="onCharInput()" onkeydown="if(event.key==='Enter')searchChar()">
-        <button class="search-btn" onclick="searchChar()">查询</button>
       </div>
     </div>
 
@@ -1043,6 +1056,14 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   <div class="panel" id="panel-wordlearned">
     <div class="learned-sticky-bar">
       <button class="sync-btn" id="word-sort-toggle-btn" onclick="toggleWordSortMode()">🕐 按测试时间排序</button>
+    </div>
+    <div class="word-search-wrap">
+      <span class="search-label">🔍 搜索词语</span>
+      <div class="search-row">
+        <input class="search-input word-search-input" id="word-search-input" type="text"
+               placeholder="输入一个或多个字，支持模糊匹配…"
+               oninput="onWordSearchInput()" onkeydown="if(event.key==='Enter')event.preventDefault()">
+      </div>
     </div>
     <div id="wordlearned-result">
       <div class="empty-state">
@@ -1131,6 +1152,8 @@ let undoState = null;   // { ch, snapshot } for 3-sec undo
 let undoTimer = null;
 let learnedSortMode = localStorage.getItem('teacherAppSortMode') || 'serial'; // 'serial' | 'testTime'
 let wordSortMode = localStorage.getItem('teacherAppWordSortMode') || 'serial'; // 'serial' | 'testTime'
+let wordSearchQuery = '';
+let wordSearchDebounceTimer = null;
 
 // ── INIT ────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -1372,7 +1395,11 @@ function renderLearnedWords() {
     return;
   }
 
-  const learnedWords = getLearnedWords();
+  let learnedWords = getLearnedWords();
+
+  if (wordSearchQuery) {
+    learnedWords = learnedWords.filter(w => w.word.includes(wordSearchQuery));
+  }
 
   if (wordSortMode === 'testTime') {
     learnedWords.sort((a, b) => {
@@ -1413,6 +1440,13 @@ function renderLearnedWords() {
       <span class="learned-header-info">📖 已学 ${learnedWords.length} 个词，${headerNote}</span>
     </div>
     <div class="word-grid">${tilesHtml}</div>`;
+}
+
+function onWordSearchInput() {
+  const el = document.getElementById('word-search-input');
+  wordSearchQuery = el.value.trim();
+  clearTimeout(wordSearchDebounceTimer);
+  wordSearchDebounceTimer = setTimeout(renderLearnedWords, 150);
 }
 
 function toggleWordSortMode() {
@@ -1717,10 +1751,10 @@ function searchChar() {
         </div>
         <button class="char-jump-arrow" onclick="handleJumpArrowClick('${ch}', ${found.serialNo})" title="跳转到已学字表">→</button>
       </div>
-      <div id="char-meaning-container"></div>
-      ${renderTestHistoryHtml(ch)}
     </div>
     <div class="char-card-body">
+      <div id="char-meaning-container"></div>
+      ${renderTestHistoryHtml(ch)}
       <div class="char-words-section">
         <div class="section-title">Words · 组词（共 ${matchedWords.length} 个）</div>
         <div class="words-grid">${wordsHtml}</div>
