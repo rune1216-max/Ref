@@ -1164,6 +1164,20 @@ window.addEventListener('DOMContentLoaded', () => {
   updateFloatNavVisibility();
 });
 
+// ── RENDER CACHE: skip rebuilding 汉字/词语 grids when nothing relevant changed ──
+let charRenderSig = null;
+let wordRenderSig = null;
+function computeRenderSig(mode, query) {
+  let n = 0, sum = 0;
+  for (const k in testData) {
+    const recs = testData[k];
+    for (let i = 0; i < recs.length; i++) { n++; if (recs[i].result === 1) sum += recs[i].timestamp; }
+  }
+  return [threshold, mode, query, n, sum].join('|');
+}
+let charRenderRefs = { c: null, w: null };
+let wordRenderRefs = { c: null, w: null };
+
 // ── TABS ─────────────────────────────────────────────────────────────────────
 function switchTab(tab, targetChar = null, targetWord = null) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -1172,14 +1186,14 @@ function switchTab(tab, targetChar = null, targetWord = null) {
   document.getElementById('tab-' + tab).classList.add('active');
   
   if (tab === 'learned') {
-    renderLearnedChars();
+    if (charRenderSig === null || charRenderSig !== computeRenderSig(learnedSortMode, '') || charRenderRefs.c !== allCharData || charRenderRefs.w !== allWordData) renderLearnedChars();
     if (targetChar) {
       setTimeout(() => scrollToCharInLearned(targetChar), 100);
     }
   }
 
   if (tab === 'wordlearned') {
-    renderLearnedWords();
+    if (wordRenderSig === null || wordRenderSig !== computeRenderSig(wordSortMode, wordSearchQuery) || wordRenderRefs.c !== allCharData || wordRenderRefs.w !== allWordData) renderLearnedWords();
     if (targetWord) {
       setTimeout(() => scrollToWordInLearned(targetWord), 100);
     }
@@ -1282,6 +1296,8 @@ function jumpToWordInLearned(word) {
 // ── LEARNED CHARACTERS ───────────────────────────────────────────────────────
 function renderLearnedChars() {
   const container = document.getElementById('learned-result');
+  charRenderSig = computeRenderSig(learnedSortMode, '');
+  charRenderRefs = { c: allCharData, w: allWordData };
 
   if (allCharData.length === 0) {
     container.innerHTML = `<div class="empty-state"><span class="e-icon">⚠️</span><p>数据未加载，请先点击「重新加载数据」</p></div>`;
@@ -1296,9 +1312,11 @@ function renderLearnedChars() {
   const learned = allCharData.filter(c => c.serialNo <= threshold);
 
   if (learnedSortMode === 'testTime') {
+    const lastCache = new Map();
+    for (const c of learned) lastCache.set(c.character, getLastTestTime(c.character));
     learned.sort((a, b) => {
-      const ta = getLastTestTime(a.character);
-      const tb = getLastTestTime(b.character);
+      const ta = lastCache.get(a.character);
+      const tb = lastCache.get(b.character);
       if (ta !== tb) return ta - tb; // ascending: never-correct chars first, most recently-correct last
       return b.serialNo - a.serialNo; // tie-break: recently learned first
     });
@@ -1384,6 +1402,8 @@ function getWordLastTestTime(chars) {
 
 function renderLearnedWords() {
   const container = document.getElementById('wordlearned-result');
+  wordRenderSig = computeRenderSig(wordSortMode, wordSearchQuery);
+  wordRenderRefs = { c: allCharData, w: allWordData };
 
   if (allWordData.length === 0) {
     container.innerHTML = `<div class="empty-state"><span class="e-icon">⚠️</span><p>数据未加载，请先点击「重新加载数据」</p></div>`;
@@ -1401,9 +1421,20 @@ function renderLearnedWords() {
   }
 
   if (wordSortMode === 'testTime') {
+    const lastCache = new Map();
+    const cachedLast = ch => {
+      let t = lastCache.get(ch);
+      if (t === undefined) { t = getLastTestTime(ch); lastCache.set(ch, t); }
+      return t;
+    };
+    for (const w of learnedWords) {
+      let m = -1;
+      for (const ch of w.chars) { const t = cachedLast(ch); if (t > m) m = t; }
+      w._lastTs = m;
+    }
     learnedWords.sort((a, b) => {
-      const ta = getWordLastTestTime(a.chars);
-      const tb = getWordLastTestTime(b.chars);
+      const ta = a._lastTs;
+      const tb = b._lastTs;
       if (ta !== tb) return ta - tb; // ascending: furthest first, most recently-correct last
       return b.maxSerial - a.maxSerial; // tie-break: recently learned first
     });
