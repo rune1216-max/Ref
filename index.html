@@ -800,6 +800,58 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   overflow-wrap: break-word;
 }
 
+/* ── DICTATION (听写) ── */
+.dict-list { display: flex; flex-direction: column; gap: 10px; }
+.dict-card {
+  background: var(--card);
+  border: 1.5px solid var(--mist);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px;
+  transition: opacity 0.18s, border-color 0.18s;
+}
+.dict-card.state-committing { border-color: var(--gold); }
+.dict-card.state-done { opacity: 0.55; border-color: #a5d6a7; }
+.dict-card.state-excluded { opacity: 0.4; }
+.dict-chars { display: flex; gap: 6px; }
+.dict-char {
+  font-family: var(--font-sans);
+  font-size: 1.5rem; font-weight: 700; color: var(--ink); line-height: 1.1;
+  background: var(--paper);
+  border: 1.5px solid var(--mist); border-radius: 8px;
+  min-width: 44px; padding: 5px 6px 3px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  cursor: pointer;
+}
+.dict-char.wrong { background: #fde8e8; border-color: var(--rust); color: #a93226; }
+.dict-char:disabled { cursor: default; }
+.dict-dots { display: flex; gap: 2px; min-height: 6px; }
+.dict-dots .lt-hist-dot { width: 6px; height: 6px; }
+.dict-actions { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+.dict-btn {
+  padding: 7px 11px;
+  border: 1.5px solid var(--mist); border-radius: 8px;
+  background: var(--card);
+  font-family: var(--font-sans); font-size: 0.8rem; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.dict-btn.ok { color: #2d6a3f; }
+.dict-btn.ex { color: #a93226; }
+.dict-btn.ok:hover { background: #d4edda; border-color: #2d6a3f; }
+.dict-btn.ex:hover { background: #fde8e8; border-color: #a93226; }
+.dict-tag { font-size: 0.78rem; font-weight: 700; color: #888; }
+.dict-meaning {
+  flex: 1 1 100%;
+  font-family: 'Arial Narrow', 'Roboto Condensed', var(--font-sans);
+  font-size: 0.82rem; font-weight: 500; color: var(--bamboo);
+  line-height: 1.25; overflow-wrap: break-word;
+}
+.dict-hint { font-size: 0.72rem; color: #aaa; margin: -6px 0 12px; }
+.dict-warn {
+  font-size: 0.75rem; color: #a93226; background: #fde8e8;
+  border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; line-height: 1.4;
+}
+
 /* ── WORD DELETE UNDO TOAST ── */
 #word-delete-toast {
   position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%);
@@ -1005,6 +1057,9 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
   <button class="tab" onclick="switchTab('wordlearned')" id="tab-wordlearned">
     📖 词语
   </button>
+  <button class="tab" onclick="switchTab('dictation')" id="tab-dictation">
+    🎧 听写
+  </button>
   <button class="tab" onclick="switchTab('annotate')" id="tab-annotate">
     📝 注音
   </button>
@@ -1072,6 +1127,22 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
     </div>
   </div>
 
+  <div class="panel" id="panel-dictation">
+    <div class="learned-sticky-bar">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="sync-btn" onclick="rerollDictation()">🔄 重抽未录入</button>
+        <button class="sync-btn" onclick="newDictationBatch()">🎲 新一批</button>
+      </div>
+      <span id="dict-status" style="font-size:0.72rem;color:#bbb;"></span>
+    </div>
+    <div id="dictation-result">
+      <div class="empty-state">
+        <span class="e-icon">🎧</span>
+        <p>请先设置已学字数阈值，并加载数据。</p>
+      </div>
+    </div>
+  </div>
+
   <div class="panel" id="panel-annotate">
 
     <div class="settings-hint">
@@ -1134,7 +1205,7 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxgh46y5Aczzjow6kG6ogHYFdmNhDo8D_dNXlvze8WggTsdw9VS-_BRgJhLO-6Cot8/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-WmIdmaQULDXYNBn-eQGGmJkZUZu_NhOr9ZjMu7kas0eUcHSLEZtJ60y7sfOqgkA/exec';
 
 let allCharData = [];   // { character, pinyin, serialNo, words }
 let allWordData = [];   // { word, meaning, pinyin }
@@ -1159,6 +1230,8 @@ window.addEventListener('DOMContentLoaded', () => {
   loadThreshold();
   loadCachedData();
   loadTestData();
+  loadDictBatch();
+  flushPendingFlags();
   updateSortToggleBtn();
   updateWordSortToggleBtn();
   updateFloatNavVisibility();
@@ -1197,6 +1270,11 @@ function switchTab(tab, targetChar = null, targetWord = null) {
     if (targetWord) {
       setTimeout(() => scrollToWordInLearned(targetWord), 100);
     }
+  }
+
+  if (tab === 'dictation') {
+    renderDictation();
+    flushPendingFlags();
   }
 
   if (tab === 'search' && document.getElementById('char-card-fixed')) {
@@ -1677,11 +1755,19 @@ async function reloadData() {
     const wCol = wi.indexOf('word') !== -1 ? wi.indexOf('word') : wi.indexOf('words');
     const mCol = wi.indexOf('meaning');
     const pCol = wi.indexOf('pinyin');
-    allWordData = wordRows.map(r => ({
+    allWordData = wordRows.map((r, i) => ({
       word:    String(r[wCol]    || '').trim(),
       meaning: String(r[mCol]   || '').trim(),
       pinyin:  String(r[pCol] !== undefined ? r[pCol] : (r[2] || '')).trim().normalize('NFC'),
+      row:     i + 2,  // original sheet row (header = row 1); kept before the filter below
+      flag:    String(r[WORDS_FLAG_COL] !== undefined ? r[WORDS_FLAG_COL] : '').trim().toUpperCase(), // column F ("tested"): Y / N / blank
     })).filter(r => r.word && r.meaning);
+
+    // Re-apply flags that were set locally but not yet written to Sheets
+    getPendingFlags().forEach(f => {
+      const w = allWordData.find(x => x.word === f.word);
+      if (w) w.flag = f.value;
+    });
 
     localStorage.setItem('chineseAppData', JSON.stringify({ allCharData, allWordData, savedAt: Date.now() }));
     buildMaps();
@@ -1699,10 +1785,314 @@ async function reloadData() {
     }
     restoreTestsFromSheets(data.tests || [], true);
     setStatus('ok', `${allCharData.length} 字 · ${allWordData.length} 词`);
+    const dictPanel = document.getElementById('panel-dictation');
+    if (dictPanel && dictPanel.classList.contains('active')) renderDictation();
+    flushPendingFlags();
   } catch(err) {
     console.error(err);
     setStatus('err', '加载失败');
   }
+}
+
+// ── DICTATION (听写) ─────────────────────────────────────────────────────────
+const WORDS_FLAG_COL   = 5;   // words sheet column F ("tested", 0-based index 5): Y / N = excluded from draws
+const DICT_BATCH_SIZE  = 16;
+const DICT_MIN_GAP     = 20;  // minimum row distance between any two picked words
+const DICT_WEIGHT_POWER = 1;  // weight = row ^ power (1 = linear; larger = stronger bias to high rows)
+const DICT_COMMIT_MS   = 3000;
+
+let dictBatch = null;         // { items: [{ word, row, state, wrong: [charIdx], action }] }
+let dictTimers = {};          // word → commit timer
+let dictFlushing = false;
+
+function loadDictBatch() {
+  try {
+    const raw = localStorage.getItem('dictationBatch');
+    if (raw) {
+      const b = JSON.parse(raw);
+      if (b && Array.isArray(b.items)) dictBatch = b;
+    }
+  } catch (e) { dictBatch = null; }
+}
+
+function saveDictBatch() {
+  if (!dictBatch) return;
+  // A word still inside its 3-second undo window is stored as pending.
+  const items = dictBatch.items.map(it => ({
+    word: it.word, row: it.row, wrong: it.wrong || [],
+    state: it.state === 'committing' ? 'pending' : it.state,
+  }));
+  try { localStorage.setItem('dictationBatch', JSON.stringify({ items })); } catch (e) {}
+}
+
+// ── column F write-back queue (survives offline / failed requests) ──
+function getPendingFlags() {
+  try { return JSON.parse(localStorage.getItem('dictPendingFlags') || '[]'); } catch (e) { return []; }
+}
+function setPendingFlags(list) {
+  try { localStorage.setItem('dictPendingFlags', JSON.stringify(list)); } catch (e) {}
+}
+function queueWordFlag(word, value) {
+  const list = getPendingFlags().filter(f => f.word !== word);
+  list.push({ word, value });
+  setPendingFlags(list);
+}
+async function flushPendingFlags() {
+  if (dictFlushing) return;
+  const sending = getPendingFlags();
+  if (sending.length === 0) { updateDictStatus(); return; }
+  dictFlushing = true;
+  let ok = false;
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'markWords', updates: sending }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      ok = true;
+      const rest = getPendingFlags().filter(f => !sending.some(s => s.word === f.word && s.value === f.value));
+      setPendingFlags(rest);
+    }
+  } catch (e) { /* stays queued; retried on next open / reload */ }
+  dictFlushing = false;
+  updateDictStatus();
+  if (ok && getPendingFlags().length > 0) flushPendingFlags(); // entries queued while this request was in flight
+}
+function updateDictStatus() {
+  const el = document.getElementById('dict-status');
+  if (!el) return;
+  const n = getPendingFlags().length;
+  el.textContent = n ? `⏳ ${n} 个标记待写入 Sheets` : '';
+}
+
+function setLocalWordFlag(word, value) {
+  const w = allWordData.find(x => x.word === word);
+  if (w) w.flag = value;
+  try {
+    const raw = localStorage.getItem('chineseAppData');
+    if (raw) {
+      const c = JSON.parse(raw);
+      c.allWordData = allWordData;
+      localStorage.setItem('chineseAppData', JSON.stringify(c));
+    }
+  } catch (e) {}
+}
+
+// ── draw logic ──
+function getDictPool() {
+  return getLearnedWords().filter(w => w.row && w.flag !== 'Y' && w.flag !== 'N');
+}
+
+function drawDictWords(count, anchorRows, avoidWords) {
+  let pool = getDictPool().filter(w =>
+    !avoidWords.has(w.word) &&
+    !anchorRows.some(r => Math.abs(w.row - r) < DICT_MIN_GAP)
+  );
+  const picked = [];
+  while (picked.length < count && pool.length > 0) {
+    let total = 0;
+    for (const w of pool) total += Math.pow(w.row, DICT_WEIGHT_POWER);
+    let x = Math.random() * total;
+    let chosen = pool[pool.length - 1];
+    for (const w of pool) {
+      x -= Math.pow(w.row, DICT_WEIGHT_POWER);
+      if (x <= 0) { chosen = w; break; }
+    }
+    picked.push(chosen);
+    pool = pool.filter(w => Math.abs(w.row - chosen.row) >= DICT_MIN_GAP);
+  }
+  return picked;
+}
+
+function mkDictItem(w) {
+  return { word: w.word, row: w.row, state: 'pending', wrong: [] };
+}
+
+function dictGuard() {
+  if (allWordData.length === 0) return '数据未加载，请先点击「重新加载数据」';
+  if (threshold === 9999) return '请先在「字典查询」页设置已学字数阈值。';
+  if (!allWordData.some(w => w.row)) return '本地缓存缺少行号信息，请点击「🔄 重新加载」更新数据。';
+  return '';
+}
+
+function flushCommittingNow() {
+  if (!dictBatch) return;
+  dictBatch.items.filter(it => it.state === 'committing').forEach(it => {
+    clearTimeout(dictTimers[it.word]);
+    commitDict(it.word);
+  });
+}
+
+function newDictationBatch() {
+  if (dictGuard()) return;
+  const pending = dictBatch ? dictBatch.items.filter(it => it.state === 'pending').length : 0;
+  if (pending > 0 && !confirm(`还有 ${pending} 个词未录入，确定换新一批吗？`)) return;
+  flushCommittingNow();
+  dictBatch = { items: drawDictWords(DICT_BATCH_SIZE, [], new Set()).map(mkDictItem) };
+  saveDictBatch();
+  renderDictation();
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function rerollDictation() {
+  if (dictGuard()) return;
+  const keep = dictBatch ? dictBatch.items.filter(it => it.state === 'done' || it.state === 'committing') : [];
+  const avoid = new Set(dictBatch ? dictBatch.items.map(it => it.word) : []);
+  const need = Math.max(0, DICT_BATCH_SIZE - keep.length);
+  const drawn = drawDictWords(need, keep.map(it => it.row), avoid);
+  dictBatch = { items: keep.concat(drawn.map(mkDictItem)) };
+  saveDictBatch();
+  renderDictation();
+}
+
+// ── per-word actions ──
+function toggleDictChar(idx, i) {
+  const it = dictBatch && dictBatch.items[idx];
+  if (!it || it.state !== 'pending') return;
+  it.wrong = it.wrong.includes(i) ? it.wrong.filter(x => x !== i) : it.wrong.concat(i);
+  saveDictBatch();
+  renderDictation();
+}
+
+function startDictCommit(idx, action) {
+  const it = dictBatch && dictBatch.items[idx];
+  if (!it || it.state !== 'pending') return;
+  it.state = 'committing';
+  it.action = action;
+  clearTimeout(dictTimers[it.word]);
+  dictTimers[it.word] = setTimeout(() => commitDict(it.word), DICT_COMMIT_MS);
+  renderDictation();
+}
+
+function cancelDictCommit(idx) {
+  const it = dictBatch && dictBatch.items[idx];
+  if (!it || it.state !== 'committing') return;
+  clearTimeout(dictTimers[it.word]);
+  delete dictTimers[it.word];
+  it.state = 'pending';
+  delete it.action;
+  renderDictation();
+}
+
+async function commitDict(word) {
+  delete dictTimers[word];
+  if (!dictBatch) return;
+  const it = dictBatch.items.find(x => x.word === word);
+  if (!it || it.state !== 'committing') return;
+
+  const action = it.action;
+  const records = [];
+  if (action === 'record') {
+    const ts = Date.now();
+    [...word].forEach((ch, i) => {
+      const rec = { timestamp: ts + i, result: it.wrong.includes(i) ? 0 : 1, synced: false };
+      if (!testData[ch]) testData[ch] = [];
+      testData[ch].push(rec);
+      records.push({ char: ch, rec });
+    });
+    saveTestData();
+  }
+
+  const value = action === 'record' ? 'Y' : 'N';
+  it.state = action === 'record' ? 'done' : 'excluded';
+  delete it.action;
+  setLocalWordFlag(word, value);
+  queueWordFlag(word, value);
+  saveDictBatch();
+  renderDictation();
+
+  if (records.length > 0) {
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'syncTestsIncremental',
+          records: records.map(r => ({ char: r.char, timestamp: r.rec.timestamp, result: r.rec.result })),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        records.forEach(r => { r.rec.synced = true; });
+        saveTestData();
+      }
+    } catch (e) { /* stays unsynced; retried by existing sync paths */ }
+  }
+  flushPendingFlags();
+}
+
+// ── render ──
+function dictCardHtml(item, idx, meaning) {
+  const locked = item.state !== 'pending';
+  const charsHtml = [...item.word].map((ch, i) => `
+    <button class="dict-char${item.wrong.includes(i) ? ' wrong' : ''}" ${locked ? 'disabled' : ''}
+            onclick="toggleDictChar(${idx},${i})">${ch}<span class="dict-dots">${getTileHistDots(ch)}</span></button>`).join('');
+
+  let actions;
+  if (item.state === 'pending') {
+    actions = `<button class="dict-btn ok" onclick="startDictCommit(${idx},'record')">✓ 录入</button>
+               <button class="dict-btn ex" onclick="startDictCommit(${idx},'exclude')">🚫 排除</button>`;
+  } else if (item.state === 'committing') {
+    actions = `<span class="dict-tag">${item.action === 'record' ? '录入中…' : '排除中…'}</span>
+               <button class="dict-btn" onclick="cancelDictCommit(${idx})">撤销</button>`;
+  } else if (item.state === 'done') {
+    actions = `<span class="dict-tag">✅ 已录入</span>`;
+  } else {
+    actions = `<span class="dict-tag">🚫 已排除</span>`;
+  }
+
+  return `
+    <div class="dict-card state-${item.state}">
+      <div class="dict-chars">${charsHtml}</div>
+      <div class="dict-actions">${actions}</div>
+      ${meaning ? `<div class="dict-meaning">${meaning}</div>` : ''}
+    </div>`;
+}
+
+function renderDictation() {
+  const container = document.getElementById('dictation-result');
+  if (!container) return;
+  updateDictStatus();
+
+  const msg = dictGuard();
+  if (msg) {
+    container.innerHTML = `<div class="empty-state"><span class="e-icon">⚠️</span><p>${msg}</p></div>`;
+    return;
+  }
+
+  if (!dictBatch || dictBatch.items.length === 0) {
+    dictBatch = { items: drawDictWords(DICT_BATCH_SIZE, [], new Set()).map(mkDictItem) };
+    saveDictBatch();
+  }
+
+  const wmap = new Map(allWordData.map(w => [w.word, w]));
+  dictBatch.items = dictBatch.items.filter(it => wmap.has(it.word)); // drop words deleted from Sheets
+
+  const poolSize = getDictPool().length;
+  const items = dictBatch.items;
+  if (items.length === 0) {
+    container.innerHTML = `<div class="empty-state"><span class="e-icon">🎧</span><p>没有可抽取的词（候选池 ${poolSize} 个）。</p></div>`;
+    return;
+  }
+
+  const nDone = items.filter(it => it.state === 'done').length;
+  const nExcl = items.filter(it => it.state === 'excluded').length;
+  const nTodo = items.length - nDone - nExcl;
+  const flagWarn = allWordData.some(w => w.flag)
+    ? ''
+    : `<div class="dict-warn">⚠️ 未读取到 words 表 F 列的任何 Y/N 标记。如果 F 列已有标记，说明 Apps Script 没有返回 F 列，请检查后再使用，否则已标记的词会被重复抽到。</div>`;
+  const doneNote = nTodo === 0 ? `<div class="dict-hint" style="color:var(--bamboo);">本批已全部完成，点「🎲 新一批」继续。</div>` : '';
+
+  container.innerHTML = `
+    ${flagWarn}
+    <div class="learned-header">
+      <span class="learned-header-info">🎧 本批 ${items.length} 词 · 已录入 ${nDone} · 已排除 ${nExcl} · 待录入 ${nTodo} · 候选池 ${poolSize}</span>
+    </div>
+    <div class="dict-hint">点汉字 = 标记写错（变红）；不点则默认全对。录入后 3 秒内可撤销。</div>
+    ${doneNote}
+    <div class="dict-list">
+      ${items.map((it, idx) => dictCardHtml(it, idx, (wmap.get(it.word) || {}).meaning)).join('')}
+    </div>`;
 }
 
 // ── SEARCH ───────────────────────────────────────────────────────────────────
