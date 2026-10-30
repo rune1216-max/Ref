@@ -1076,7 +1076,8 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
                placeholder="输入单个汉字…" autocomplete="off"
                oninput="onCharInput(event)"
                oncompositionstart="charComposing=true"
-               oncompositionend="charComposing=false;onCharInput()"
+               oncompositionend="onCharCompositionEnd()"
+               onblur="charComposing=false"
                onkeydown="if(event.key==='Enter'&&!event.isComposing&&!charComposing)searchChar()">
       </div>
     </div>
@@ -2101,6 +2102,11 @@ function renderDictation() {
 // ── SEARCH ───────────────────────────────────────────────────────────────────
 let charSearchDebounceTimer = null;
 let charComposing = false;   // 拼音输入法组字中：不截断、不搜索
+// 组字结束：延后一拍再读取输入框，不同浏览器 compositionend 与最后一次 input 的先后顺序不一致
+function onCharCompositionEnd() {
+  charComposing = false;
+  setTimeout(() => { charComposing = false; onCharInput(); }, 0);
+}
 function onCharInput(e) {
   const el = document.getElementById('char-input');
   if (charComposing || (e && e.isComposing)) return;
