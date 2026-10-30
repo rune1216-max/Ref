@@ -2105,20 +2105,32 @@ let charComposing = false;   // 拼音输入法组字中：不截断、不搜索
 // 组字结束：延后一拍再读取输入框，不同浏览器 compositionend 与最后一次 input 的先后顺序不一致
 function onCharCompositionEnd() {
   charComposing = false;
-  setTimeout(() => { charComposing = false; onCharInput(); }, 0);
+  setTimeout(() => {
+    charComposing = false;
+    if (document.getElementById('char-input').value) onCharInput();  // 已被检索清空则不再触发
+  }, 0);
+}
+const HAN_RE = /[㐀-䶿一-鿿豈-﫿\u{20000}-\u{2fa1f}]/u;
+// 取输入内容中最后一个汉字；没有汉字则取最后一个字符（按码点，避免生僻字被拆开）
+function lastInputChar(str) {
+  const chars = Array.from(str.trim());
+  for (let i = chars.length - 1; i >= 0; i--) if (HAN_RE.test(chars[i])) return chars[i];
+  return chars.length ? chars[chars.length - 1] : '';
 }
 function onCharInput(e) {
   const el = document.getElementById('char-input');
-  if (charComposing || (e && e.isComposing)) return;
-  const chars = Array.from(el.value);   // 按码点，避免生僻字被拆开
-  if (chars.length > 1) el.value = chars[chars.length - 1];
+  const composing = charComposing || (e && e.isComposing);
+  const hasHan = Array.from(el.value).some(c => HAN_RE.test(c));
+  // 组字中且还没有汉字（只有拼音字母）→ 等待；一旦出现汉字（含输入法预选/已上屏但未结束组字）就立即检索
+  if (composing && !hasHan) return;
+  if (!composing && Array.from(el.value).length > 1) el.value = lastInputChar(el.value);
   clearTimeout(charSearchDebounceTimer);
   charSearchDebounceTimer = setTimeout(searchChar, 150);
 }
 
 function searchChar() {
   const inputEl = document.getElementById('char-input');
-  const ch = inputEl.value.trim();
+  const ch = lastInputChar(inputEl.value);
   const container = document.getElementById('char-result');
 
   if (!ch) {
