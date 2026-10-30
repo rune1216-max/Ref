@@ -1073,8 +1073,11 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
       <span class="search-label">🔍 输入一个汉字</span>
       <div class="search-row">
         <input class="search-input" id="char-input" type="text"
-               maxlength="1" placeholder="输入单个汉字…"
-               oninput="onCharInput()" onkeydown="if(event.key==='Enter')searchChar()">
+               placeholder="输入单个汉字…" autocomplete="off"
+               oninput="onCharInput(event)"
+               oncompositionstart="charComposing=true"
+               oncompositionend="charComposing=false;onCharInput()"
+               onkeydown="if(event.key==='Enter'&&!event.isComposing&&!charComposing)searchChar()">
       </div>
     </div>
 
@@ -2097,9 +2100,12 @@ function renderDictation() {
 
 // ── SEARCH ───────────────────────────────────────────────────────────────────
 let charSearchDebounceTimer = null;
-function onCharInput() {
+let charComposing = false;   // 拼音输入法组字中：不截断、不搜索
+function onCharInput(e) {
   const el = document.getElementById('char-input');
-  if (el.value.length > 1) el.value = el.value[el.value.length - 1];
+  if (charComposing || (e && e.isComposing)) return;
+  const chars = Array.from(el.value);   // 按码点，避免生僻字被拆开
+  if (chars.length > 1) el.value = chars[chars.length - 1];
   clearTimeout(charSearchDebounceTimer);
   charSearchDebounceTimer = setTimeout(searchChar, 150);
 }
