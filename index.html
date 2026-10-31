@@ -271,7 +271,19 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
 .word-search-input {
   width: 100%;
   text-align: left;
+  padding-right: 36px;
 }
+.word-search-box { position: relative; flex: 1; min-width: 0; }
+.word-search-clear {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 26px; height: 26px; padding: 0;
+  border: none; border-radius: 50%;
+  background: var(--mist); color: #666;
+  font-size: 0.8rem; line-height: 26px; text-align: center;
+  cursor: pointer;
+}
+.word-search-clear:hover { background: #d8d8d8; }
+.word-search-clear[hidden] { display: none; }
 
 /* ── CHARACTER RESULT CARD ── */
 .char-card {
@@ -1118,9 +1130,17 @@ main { max-width: 720px; margin: 0 auto; padding: 0 16px 24px; position: relativ
     <div class="word-search-wrap">
       <span class="search-label">🔍 搜索词语</span>
       <div class="search-row">
-        <input class="search-input word-search-input" id="word-search-input" type="text"
-               placeholder="输入一个或多个字，支持模糊匹配…"
-               oninput="onWordSearchInput()" onkeydown="if(event.key==='Enter')event.preventDefault()">
+        <div class="word-search-box">
+          <input class="search-input word-search-input" id="word-search-input" type="text"
+                 placeholder="输入一个或多个字，支持模糊匹配…" autocomplete="off"
+                 oninput="onWordSearchInput(event)"
+                 oncompositionstart="wordSearchComposing=true"
+                 oncompositionend="onWordSearchCompositionEnd()"
+                 onblur="wordSearchComposing=false"
+                 onkeydown="if(event.key==='Enter')event.preventDefault()">
+          <button type="button" class="word-search-clear" id="word-search-clear"
+                  onclick="clearWordSearch()" aria-label="清空搜索" title="清空" hidden>✕</button>
+        </div>
       </div>
     </div>
     <div id="wordlearned-result">
@@ -1336,6 +1356,7 @@ function scrollToCharInLearned(ch) {
 }
 
 function scrollToWordInLearned(word) {
+  flushWordChunks();   // 目标词可能还在分批队列里
   const tile = document.getElementById('wt-' + word);
   if (!tile) return;
 
@@ -1482,8 +1503,52 @@ function getWordLastTestTime(chars) {
   return max;
 }
 
+// 词语网格分批渲染：先同步渲染前 WORD_FIRST_CHUNK 个，其余在空闲时分批追加。
+// （无搜索词时词语很多，一次性生成全部 DOM 会卡 0.5 秒左右）
+const WORD_FIRST_CHUNK = 120;
+const WORD_NEXT_CHUNK = 240;
+let wordRenderToken = 0;
+let wordPendingTiles = [];
+function wordTileHtml(w) {
+  const charsHtml = w.chars.map(ch => `
+      <div class="wt-char-cell" data-ch="${ch}">
+        <div class="wt-char">${ch}</div>
+        <div class="wt-char-btns">
+          <button class="wt-char-btn correct-btn"   onclick="event.stopPropagation();recordTest('${ch}',1)">✓</button>
+          <button class="wt-char-btn incorrect-btn" onclick="event.stopPropagation();recordTest('${ch}',0)">✗</button>
+        </div>
+        <div class="wt-char-dots">${getTileHistDots(ch)}</div>
+      </div>`).join('');
+
+  return `
+      <div class="word-tile" id="wt-${w.word}">
+        <button class="wt-delete" onclick="pendingDeleteWord('${w.word}', event)" title="删除「${w.word}」">×</button>
+        <div class="wt-chars">${charsHtml}</div>
+        ${w.meaning ? `<div class="wt-meaning">${w.meaning}</div>` : ''}
+      </div>`;
+}
+function appendWordChunk(count) {
+  const grid = document.getElementById('word-grid');
+  if (!grid || wordPendingTiles.length === 0) { wordPendingTiles = []; return; }
+  const batch = wordPendingTiles.splice(0, count).filter(w => wordSet.has(w.word));  // 跳过期间已删除的词
+  grid.insertAdjacentHTML('beforeend', batch.map(wordTileHtml).join(''));  // 追加时才读取最新测试记录
+}
+function scheduleWordChunks(token) {
+  if (wordPendingTiles.length === 0) return;
+  setTimeout(() => {
+    if (token !== wordRenderToken) return;   // 已被新的渲染取代
+    appendWordChunk(WORD_NEXT_CHUNK);
+    scheduleWordChunks(token);
+  }, 0);
+}
+function flushWordChunks() {   // 需要全部词块都在 DOM 中时（如跳转定位）调用
+  appendWordChunk(wordPendingTiles.length);
+}
+
 function renderLearnedWords() {
   const container = document.getElementById('wordlearned-result');
+  wordRenderToken++;
+  wordPendingTiles = [];
   wordRenderSig = computeRenderSig(wordSortMode, wordSearchQuery);
   wordRenderRefs = { c: allCharData, w: allWordData };
 
@@ -1524,24 +1589,9 @@ function renderLearnedWords() {
     learnedWords.sort((a, b) => b.maxSerial - a.maxSerial);
   }
 
-  const tilesHtml = learnedWords.map(w => {
-    const charsHtml = w.chars.map(ch => `
-      <div class="wt-char-cell" data-ch="${ch}">
-        <div class="wt-char">${ch}</div>
-        <div class="wt-char-btns">
-          <button class="wt-char-btn correct-btn"   onclick="event.stopPropagation();recordTest('${ch}',1)">✓</button>
-          <button class="wt-char-btn incorrect-btn" onclick="event.stopPropagation();recordTest('${ch}',0)">✗</button>
-        </div>
-        <div class="wt-char-dots">${getTileHistDots(ch)}</div>
-      </div>`).join('');
-
-    return `
-      <div class="word-tile" id="wt-${w.word}">
-        <button class="wt-delete" onclick="pendingDeleteWord('${w.word}', event)" title="删除「${w.word}」">×</button>
-        <div class="wt-chars">${charsHtml}</div>
-        ${w.meaning ? `<div class="wt-meaning">${w.meaning}</div>` : ''}
-      </div>`;
-  }).join('');
+  const tilesHtml = learnedWords.slice(0, WORD_FIRST_CHUNK).map(wordTileHtml).join('');
+  wordPendingTiles = learnedWords.slice(WORD_FIRST_CHUNK);
+  const chunkToken = wordRenderToken;
 
   const headerNote = wordSortMode === 'testTime'
     ? '按组成字最后一次测试正确时间（取最大值）从远到近排序'
@@ -1551,14 +1601,41 @@ function renderLearnedWords() {
     <div class="learned-header">
       <span class="learned-header-info">📖 已学 ${learnedWords.length} 个词，${headerNote}</span>
     </div>
-    <div class="word-grid">${tilesHtml}</div>`;
+    <div class="word-grid" id="word-grid">${tilesHtml}</div>`;
+  scheduleWordChunks(chunkToken);
 }
 
-function onWordSearchInput() {
+let wordSearchComposing = false;   // 拼音输入法组字中
+function updateWordSearchClear() {
   const el = document.getElementById('word-search-input');
-  wordSearchQuery = el.value.trim();
+  const btn = document.getElementById('word-search-clear');
+  if (el && btn) btn.hidden = !el.value;
+}
+function onWordSearchInput(e) {
+  const el = document.getElementById('word-search-input');
+  updateWordSearchClear();
+  // 组字中且输入框里还有拼音字母 → 等输入法确认后再搜；已出现纯汉字则立即搜
+  if ((wordSearchComposing || (e && e.isComposing)) && /[A-Za-z]/.test(el.value)) return;
+  const q = el.value.trim();
+  if (q === wordSearchQuery) return;
+  wordSearchQuery = q;
   clearTimeout(wordSearchDebounceTimer);
-  wordSearchDebounceTimer = setTimeout(renderLearnedWords, 150);
+  renderLearnedWords();   // 不再延迟 150ms：渲染本身已做分批
+}
+function onWordSearchCompositionEnd() {
+  wordSearchComposing = false;
+  setTimeout(() => { wordSearchComposing = false; onWordSearchInput(); }, 0);
+}
+function clearWordSearch() {
+  const el = document.getElementById('word-search-input');
+  el.value = '';
+  wordSearchComposing = false;
+  updateWordSearchClear();
+  if (wordSearchQuery !== '') {
+    wordSearchQuery = '';
+    renderLearnedWords();
+  }
+  el.focus();
 }
 
 function toggleWordSortMode() {
